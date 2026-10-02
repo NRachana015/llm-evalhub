@@ -1,0 +1,6 @@
+{
+    "version": "v1",
+    "name": "baseline_qa",
+    "template": "Answer the question using the provided context.",
+    "description": "Baseline question-answering prompt for evaluation experiments."
+}

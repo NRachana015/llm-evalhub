@@ -1,0 +1,6 @@
+{
+    "version": "v2",
+    "name": "grounded_qa",
+    "template": "Answer the question using only the provided context. If the answer is not supported by the context, state that the information is insufficient.",
+    "description": "Grounded question-answering prompt designed to reduce unsupported responses."
+}
