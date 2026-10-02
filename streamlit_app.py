@@ -1,8 +1,8 @@
-
 import streamlit as st
 import requests
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 
 # ============================================================
@@ -68,43 +68,21 @@ def get_datasets():
         return []
 
 
-def get_prompts():
-    try:
-        response = requests.get(
-            f"{BACKEND_URL}/prompts",
-            timeout=10,
-        )
-
-        if response.status_code == 200:
-            data = response.json()
-
-            if isinstance(data, list):
-                return data
-
-            return []
-
-        return []
-
-    except requests.exceptions.RequestException:
-        return []
-
-
 def get_run_comparison(run_ids):
     try:
-        params = []
+        params = [
+            ("run_ids", int(run_id))
+            for run_id in run_ids
+        ]
 
-        for run_id in run_ids:
-            params.append(("run_ids", int(run_id)))
-
-        response = requests.get(
+        return requests.get(
             f"{BACKEND_URL}/compare",
             params=params,
             timeout=30,
         )
 
-        return response
-
     except requests.exceptions.RequestException as exc:
+
         st.error(
             f"Backend connection failed: {exc}"
         )
@@ -188,7 +166,7 @@ with tab1:
 
         else:
 
-            dataset_payload = {
+            payload = {
                 "name": dataset_name,
                 "prompts": [
                     {
@@ -205,7 +183,7 @@ with tab1:
 
                 response = requests.post(
                     f"{BACKEND_URL}/datasets",
-                    json=dataset_payload,
+                    json=payload,
                     timeout=30,
                 )
 
@@ -335,12 +313,6 @@ with tab2:
         step=1,
     )
 
-    st.info(
-        "The backend records model responses, latency, "
-        "token usage, cost, standard metrics, and "
-        "LLM-as-a-Judge metrics."
-    )
-
     if st.button(
         "▶️ Run Evaluation",
         type="primary",
@@ -360,7 +332,7 @@ with tab2:
 
         else:
 
-            run_payload = {
+            payload = {
                 "name": run_name,
                 "dataset_id": dataset_id,
                 "models": selected_models,
@@ -377,7 +349,7 @@ with tab2:
 
                     response = requests.post(
                         f"{BACKEND_URL}/runs",
-                        json=run_payload,
+                        json=payload,
                         timeout=300,
                     )
 
@@ -397,15 +369,11 @@ with tab2:
                             "run_id"
                         )
 
-                        # ------------------------------------------------
-                        # SUCCESS / PARTIAL SUCCESS
-                        # ------------------------------------------------
-
                         if status == "completed_with_errors":
 
                             st.warning(
-                                "⚠️ Evaluation completed with one or more "
-                                "model failures."
+                                "⚠️ Evaluation completed with "
+                                "one or more model failures."
                             )
 
                         elif status == "completed":
@@ -420,22 +388,22 @@ with tab2:
                                 f"Evaluation status: {status}"
                             )
 
-                        # ------------------------------------------------
-                        # RUN SUMMARY
-                        # ------------------------------------------------
+                        # --------------------------------------------
+                        # SUMMARY
+                        # --------------------------------------------
 
                         st.subheader("Run Summary")
 
-                        summary_col1, summary_col2, summary_col3 = st.columns(3)
+                        c1, c2, c3 = st.columns(3)
 
-                        with summary_col1:
+                        with c1:
 
                             st.metric(
                                 "Run ID",
                                 run_id if run_id is not None else "N/A",
                             )
 
-                        with summary_col2:
+                        with c2:
 
                             st.metric(
                                 "Responses",
@@ -445,7 +413,7 @@ with tab2:
                                 ),
                             )
 
-                        with summary_col3:
+                        with c3:
 
                             st.metric(
                                 "Judge Type",
@@ -455,9 +423,9 @@ with tab2:
                                 ),
                             )
 
-                        # ------------------------------------------------
+                        # --------------------------------------------
                         # MODEL STATUS
-                        # ------------------------------------------------
+                        # --------------------------------------------
 
                         successful_models = result.get(
                             "successful_models",
@@ -473,7 +441,9 @@ with tab2:
 
                             st.success(
                                 "✅ Successful models: "
-                                + ", ".join(successful_models)
+                                + ", ".join(
+                                    successful_models
+                                )
                             )
 
                         if failed_models:
@@ -517,13 +487,13 @@ with tab2:
                                     use_container_width=True,
                                 )
 
-                        # ------------------------------------------------
-                        # EVALUATION COUNTS
-                        # ------------------------------------------------
+                        # --------------------------------------------
+                        # SCORE COUNTS
+                        # --------------------------------------------
 
-                        count_col1, count_col2, count_col3, count_col4 = st.columns(4)
+                        c1, c2, c3, c4 = st.columns(4)
 
-                        with count_col1:
+                        with c1:
 
                             st.metric(
                                 "Standard Scores",
@@ -533,7 +503,7 @@ with tab2:
                                 ),
                             )
 
-                        with count_col2:
+                        with c2:
 
                             st.metric(
                                 "Judge Scores",
@@ -543,7 +513,7 @@ with tab2:
                                 ),
                             )
 
-                        with count_col3:
+                        with c3:
 
                             st.metric(
                                 "Real LLM Judges",
@@ -553,7 +523,7 @@ with tab2:
                                 ),
                             )
 
-                        with count_col4:
+                        with c4:
 
                             st.metric(
                                 "Local Fallbacks",
@@ -562,10 +532,6 @@ with tab2:
                                     0,
                                 ),
                             )
-
-                        # ------------------------------------------------
-                        # STORE LATEST RUN
-                        # ------------------------------------------------
 
                         if run_id is not None:
 
@@ -576,10 +542,6 @@ with tab2:
                             st.info(
                                 f"Latest Run ID: {run_id}"
                             )
-
-                        # ------------------------------------------------
-                        # FULL BACKEND RESPONSE
-                        # ------------------------------------------------
 
                         with st.expander(
                             "View complete backend response"
@@ -615,7 +577,7 @@ with tab3:
 
     default_run_id = st.session_state.get(
         "latest_run_id",
-        27,
+        28,
     )
 
     run_id = st.number_input(
@@ -649,74 +611,82 @@ with tab3:
                     "📈 Standard Evaluation Metrics"
                 )
 
-                if results:
+                rows = []
 
-                    rows = []
+                for response_item in results:
 
-                    for response_item in results:
+                    for score in response_item.get(
+                        "scores",
+                        [],
+                    ):
 
-                        for score in response_item.get(
-                            "scores",
-                            [],
-                        ):
-
-                            rows.append(
-                                {
-                                    "Response ID": response_item.get(
-                                        "id"
-                                    ),
-                                    "Model": response_item.get(
-                                        "model_name"
-                                    ),
-                                    "Metric": score.get(
-                                        "metric_name"
-                                    ),
-                                    "Score": score.get(
-                                        "score_value"
-                                    ),
-                                }
-                            )
-
-                    if rows:
-
-                        df = pd.DataFrame(rows)
-
-                        st.dataframe(
-                            df,
-                            use_container_width=True,
+                        rows.append(
+                            {
+                                "Response ID": response_item.get(
+                                    "id"
+                                ),
+                                "Model": response_item.get(
+                                    "model_name"
+                                ),
+                                "Metric": score.get(
+                                    "metric_name"
+                                ),
+                                "Score": score.get(
+                                    "score_value"
+                                ),
+                            }
                         )
 
-                        metric_summary = (
-                            df.groupby(
-                                "Metric",
-                                as_index=False,
-                            )["Score"]
-                            .mean()
-                        )
+                if rows:
 
-                        fig = px.bar(
-                            metric_summary,
-                            x="Metric",
-                            y="Score",
-                            title="Average Standard Metrics",
-                            range_y=[0, 1],
-                        )
+                    df = pd.DataFrame(rows)
 
-                        st.plotly_chart(
-                            fig,
-                            use_container_width=True,
-                        )
+                    df["Score"] = pd.to_numeric(
+                        df["Score"],
+                        errors="coerce",
+                    )
 
-                    else:
+                    st.dataframe(
+                        df,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
 
-                        st.info(
-                            "No standard scores found."
+                    metric_summary = (
+                        df.dropna(
+                            subset=["Score"]
                         )
+                        .groupby(
+                            "Metric",
+                            as_index=False,
+                        )["Score"]
+                        .mean()
+                    )
+
+                    fig = px.bar(
+                        metric_summary,
+                        x="Metric",
+                        y="Score",
+                        title="Average Standard Metrics",
+                        range_y=[0, 1],
+                        text_auto=".2f",
+                    )
+
+                    fig.update_layout(
+                        height=450,
+                        xaxis_title="Metric",
+                        yaxis_title="Average Score",
+                    )
+
+                    st.plotly_chart(
+                        fig,
+                        use_container_width=True,
+                    )
 
                 else:
 
                     st.info(
-                        "No responses found for this run."
+                        "No standard scores found."
                     )
 
             else:
@@ -737,7 +707,7 @@ with tab3:
             )
 
         # ====================================================
-        # LLM-AS-A-JUDGE RESULTS
+        # JUDGE RESULTS
         # ====================================================
 
         st.divider()
@@ -757,253 +727,442 @@ with tab3:
 
                 judge_results = judge_response.json()
 
-                if isinstance(
-                    judge_results,
-                    dict,
-                ):
+                judge_items = judge_results.get(
+                    "results",
+                    [],
+                )
 
-                    judge_items = judge_results.get(
-                        "results",
+                judge_rows = []
+
+                for item in judge_items:
+
+                    response_id = item.get(
+                        "response_id"
+                    )
+
+                    model_name = item.get(
+                        "model_name",
+                        "",
+                    )
+
+                    judge_scores = item.get(
+                        "judge_scores",
                         [],
                     )
 
-                elif isinstance(
-                    judge_results,
-                    list,
-                ):
+                    for score in judge_scores:
 
-                    judge_items = judge_results
-
-                else:
-
-                    judge_items = []
-
-                if judge_items:
-
-                    judge_rows = []
-
-                    for item in judge_items:
-
-                        if not isinstance(
-                            item,
-                            dict,
-                        ):
-                            continue
-
-                        response_id = item.get(
-                            "response_id"
+                        judge_rows.append(
+                            {
+                                "Response ID": response_id,
+                                "Model": model_name,
+                                "Judge Type": score.get(
+                                    "judge_type"
+                                ),
+                                "Rubric": score.get(
+                                    "rubric_version"
+                                ),
+                                "Metric": score.get(
+                                    "metric_name"
+                                ),
+                                "Score": score.get(
+                                    "score_value"
+                                ),
+                                "Explanation": score.get(
+                                    "explanation"
+                                ),
+                            }
                         )
 
-                        model_name = item.get(
-                            "model_name",
-                            "",
+                if judge_rows:
+
+                    judge_df = pd.DataFrame(
+                        judge_rows
+                    )
+
+                    judge_df["Score"] = pd.to_numeric(
+                        judge_df["Score"],
+                        errors="coerce",
+                    )
+
+                    # --------------------------------------------
+                    # Judge table
+                    # --------------------------------------------
+
+                    st.dataframe(
+                        judge_df,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+                    # --------------------------------------------
+                    # Judge average chart
+                    # --------------------------------------------
+
+                    judge_summary = (
+                        judge_df.dropna(
+                            subset=["Score"]
                         )
+                        .groupby(
+                            "Metric",
+                            as_index=False,
+                        )["Score"]
+                        .mean()
+                    )
 
-                        judge_scores = item.get(
-                            "judge_scores",
-                            [],
-                        )
+                    fig_judge = px.bar(
+                        judge_summary,
+                        x="Metric",
+                        y="Score",
+                        title="Average LLM-as-a-Judge Metrics",
+                        range_y=[0, 1],
+                        text_auto=".2f",
+                    )
 
-                        if not isinstance(
-                            judge_scores,
-                            list,
-                        ):
-                            continue
+                    fig_judge.update_layout(
+                        height=450,
+                        xaxis_title="Metric",
+                        yaxis_title="Average Score",
+                    )
 
-                        for score in judge_scores:
+                    st.plotly_chart(
+                        fig_judge,
+                        use_container_width=True,
+                    )
 
-                            if not isinstance(
-                                score,
-                                dict,
-                            ):
-                                continue
+                    # ============================================
+                    # JUDGE EXECUTION SUMMARY
+                    # ============================================
 
-                            judge_rows.append(
-                                {
-                                    "Response ID": response_id,
-                                    "Model": model_name,
-                                    "Judge Type": score.get(
-                                        "judge_type"
-                                    ),
-                                    "Rubric": score.get(
-                                        "rubric_version"
-                                    ),
-                                    "Metric": score.get(
-                                        "metric_name"
-                                    ),
-                                    "Score": score.get(
-                                        "score_value"
-                                    ),
-                                    "Explanation": score.get(
-                                        "explanation"
-                                    ),
-                                }
-                            )
+                    st.subheader(
+                        "🔍 Judge Execution Summary"
+                    )
 
-                    if judge_rows:
-
-                        judge_df = pd.DataFrame(
-                            judge_rows
-                        )
-
-                        st.dataframe(
-                            judge_df,
-                            use_container_width=True,
-                        )
-
-                        judge_summary = (
-                            judge_df.groupby(
-                                "Metric",
-                                as_index=False,
-                            )["Score"]
-                            .mean()
-                        )
-
-                        fig_judge = px.bar(
-                            judge_summary,
-                            x="Metric",
-                            y="Score",
-                            title="Average LLM-as-a-Judge Metrics",
-                            range_y=[0, 1],
-                        )
-
-                        st.plotly_chart(
-                            fig_judge,
-                            use_container_width=True,
-                        )
-
-                        # ====================================
-                        # JUDGE TYPE SUMMARY
-                        # ====================================
-
-                        st.subheader(
-                            "🔍 Judge Execution Summary"
-                        )
-
-                        judge_types = (
-                            judge_df[
-                                "Judge Type"
-                            ]
-                            .value_counts()
-                            .reset_index()
-                        )
-
-                        judge_types.columns = [
-                            "Judge Type",
-                            "Count",
+                    judge_types = (
+                        judge_df[
+                            "Judge Type"
                         ]
+                        .value_counts()
+                        .reset_index()
+                    )
 
-                        st.dataframe(
-                            judge_types,
-                            use_container_width=True,
+                    judge_types.columns = [
+                        "Judge Type",
+                        "Count",
+                    ]
+
+                    st.dataframe(
+                        judge_types,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+                    # ============================================
+                    # HALLUCINATION ANALYSIS
+                    # ============================================
+
+                    st.subheader(
+                        "🚨 Hallucination Analysis"
+                    )
+
+                    hallucination_df = judge_df[
+                        judge_df["Metric"]
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                        == "hallucination"
+                    ].copy()
+
+                    if not hallucination_df.empty:
+
+                        hallucination_df["Score"] = pd.to_numeric(
+                            hallucination_df["Score"],
+                            errors="coerce",
                         )
 
-                        # ====================================
-                        # HALLUCINATION ANALYSIS
-                        # ====================================
-
-                        st.subheader(
-                            "🚨 Hallucination Analysis"
+                        hallucination_df = (
+                            hallucination_df
+                            .dropna(
+                                subset=["Score"]
+                            )
+                            .reset_index(drop=True)
                         )
 
-                        hallucination_df = judge_df[
-                            judge_df["Metric"]
-                            == "hallucination"
-                        ]
+                    if hallucination_df.empty:
 
-                        if not hallucination_df.empty:
-
-                            st.dataframe(
-                                hallucination_df,
-                                use_container_width=True,
-                            )
-
-                            fig_hallucination = px.bar(
-                                hallucination_df,
-                                x="Response ID",
-                                y="Score",
-                                title="Hallucination Score by Response",
-                                range_y=[0, 1],
-                            )
-
-                            st.plotly_chart(
-                                fig_hallucination,
-                                use_container_width=True,
-                            )
-
-                        else:
-
-                            st.info(
-                                "No hallucination scores found."
-                            )
-
-                        # ====================================
-                        # RESPONSE-LEVEL DETAILS
-                        # ====================================
-
-                        st.subheader(
-                            "🔎 Response-Level Judge Details"
+                        st.warning(
+                            "No valid hallucination score was found."
                         )
-
-                        for response_id in sorted(
-                            judge_df["Response ID"]
-                            .dropna()
-                            .unique()
-                        ):
-
-                            response_data = judge_df[
-                                judge_df["Response ID"]
-                                == response_id
-                            ]
-
-                            with st.expander(
-                                f"Response {response_id}"
-                            ):
-
-                                st.write(
-                                    "Model:",
-                                    response_data[
-                                        "Model"
-                                    ].iloc[0],
-                                )
-
-                                st.write(
-                                    "Judge Type:",
-                                    response_data[
-                                        "Judge Type"
-                                    ].iloc[0],
-                                )
-
-                                st.write(
-                                    "Rubric:",
-                                    response_data[
-                                        "Rubric"
-                                    ].iloc[0],
-                                )
-
-                                display_columns = [
-                                    "Metric",
-                                    "Score",
-                                    "Explanation",
-                                ]
-
-                                st.dataframe(
-                                    response_data[
-                                        display_columns
-                                    ],
-                                    use_container_width=True,
-                                )
 
                     else:
 
-                        st.info(
-                            "No judge scores found for this run."
+                        # ----------------------------------------
+                        # Summary metrics
+                        # ----------------------------------------
+
+                        average_hallucination = (
+                            hallucination_df[
+                                "Score"
+                            ].mean()
                         )
+
+                        maximum_hallucination = (
+                            hallucination_df[
+                                "Score"
+                            ].max()
+                        )
+
+                        minimum_hallucination = (
+                            hallucination_df[
+                                "Score"
+                            ].min()
+                        )
+
+                        c1, c2, c3 = st.columns(3)
+
+                        with c1:
+
+                            st.metric(
+                                "Average Hallucination",
+                                f"{average_hallucination:.3f}",
+                            )
+
+                        with c2:
+
+                            st.metric(
+                                "Maximum Hallucination",
+                                f"{maximum_hallucination:.3f}",
+                            )
+
+                        with c3:
+
+                            st.metric(
+                                "Responses Evaluated",
+                                len(
+                                    hallucination_df
+                                ),
+                            )
+
+                        # ----------------------------------------
+                        # Interpretation
+                        # ----------------------------------------
+
+                        st.info(
+                            "A hallucination score closer to 0 "
+                            "indicates fewer unsupported claims. "
+                            "A score closer to 1 indicates a higher "
+                            "hallucination signal."
+                        )
+
+                        # ----------------------------------------
+                        # Hallucination table
+                        # ----------------------------------------
+
+                        display_columns = [
+                            "Response ID",
+                            "Model",
+                            "Judge Type",
+                            "Rubric",
+                            "Score",
+                        ]
+
+                        available_columns = [
+                            column
+                            for column in display_columns
+                            if column in hallucination_df.columns
+                        ]
+
+                        st.dataframe(
+                            hallucination_df[
+                                available_columns
+                            ],
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+
+                        # ========================================
+                        # VISIBLE HALLUCINATION VISUALIZATION
+                        # ========================================
+
+                        st.markdown(
+                            "### 📉 Hallucination Score by Response"
+                        )
+
+                        chart_df = hallucination_df[
+                            [
+                                "Response ID",
+                                "Model",
+                                "Score",
+                            ]
+                        ].copy()
+
+                        chart_df["Response ID"] = (
+                            chart_df[
+                                "Response ID"
+                            ]
+                            .astype(str)
+                        )
+
+                        # ----------------------------------------
+                        # Use a minimum display height.
+                        #
+                        # This is important because a true score
+                        # of 0.0 produces a zero-height bar.
+                        # ----------------------------------------
+
+                        chart_df["Display Score"] = chart_df[
+                            "Score"
+                        ].apply(
+                            lambda x: 0.03
+                            if x == 0
+                            else x
+                        )
+
+                        fig_hallucination = go.Figure()
+
+                        for model in chart_df[
+                            "Model"
+                        ].unique():
+
+                            model_df = chart_df[
+                                chart_df["Model"]
+                                == model
+                            ]
+
+                            fig_hallucination.add_trace(
+                                go.Bar(
+                                    x=model_df[
+                                        "Response ID"
+                                    ],
+                                    y=model_df[
+                                        "Display Score"
+                                    ],
+                                    name=str(model),
+                                    text=[
+                                        f"{score:.2f}"
+                                        for score in model_df[
+                                            "Score"
+                                        ]
+                                    ],
+                                    textposition="outside",
+                                    customdata=model_df[
+                                        ["Score"]
+                                    ],
+                                    hovertemplate=(
+                                        "<b>Response %{x}</b>"
+                                        "<br>Model: "
+                                        + str(model)
+                                        + "<br>Hallucination: "
+                                        "%{customdata[0]:.3f}"
+                                        "<extra></extra>"
+                                    ),
+                                )
+                            )
+
+                        fig_hallucination.update_layout(
+                            height=500,
+                            title="Hallucination Score by Response",
+                            xaxis_title="Response ID",
+                            yaxis_title="Hallucination Score",
+                            yaxis=dict(
+                                range=[0, 1],
+                                tickformat=".2f",
+                            ),
+                            barmode="group",
+                            margin=dict(
+                                t=80,
+                                b=80,
+                            ),
+                        )
+
+                        st.plotly_chart(
+                            fig_hallucination,
+                            use_container_width=True,
+                            key="hallucination_chart",
+                        )
+
+                        # ----------------------------------------
+                        # Explicit result
+                        # ----------------------------------------
+
+                        if (
+                            maximum_hallucination
+                            == 0
+                        ):
+
+                            st.success(
+                                "✅ All evaluated responses have a "
+                                "hallucination score of 0.00."
+                            )
+
+                    # ============================================
+                    # RESPONSE DETAILS
+                    # ============================================
+
+                    st.subheader(
+                        "🔎 Response-Level Judge Details"
+                    )
+
+                    response_ids = (
+                        judge_df[
+                            "Response ID"
+                        ]
+                        .dropna()
+                        .unique()
+                    )
+
+                    for response_id in sorted(
+                        response_ids
+                    ):
+
+                        response_data = judge_df[
+                            judge_df[
+                                "Response ID"
+                            ]
+                            == response_id
+                        ]
+
+                        with st.expander(
+                            f"Response {response_id}"
+                        ):
+
+                            st.write(
+                                "Model:",
+                                response_data[
+                                    "Model"
+                                ].iloc[0],
+                            )
+
+                            st.write(
+                                "Judge Type:",
+                                response_data[
+                                    "Judge Type"
+                                ].iloc[0],
+                            )
+
+                            st.write(
+                                "Rubric:",
+                                response_data[
+                                    "Rubric"
+                                ].iloc[0],
+                            )
+
+                            st.dataframe(
+                                response_data[
+                                    [
+                                        "Metric",
+                                        "Score",
+                                        "Explanation",
+                                    ]
+                                ],
+                                use_container_width=True,
+                                hide_index=True,
+                            )
 
                 else:
 
                     st.info(
-                        "No judge results found for this run."
+                        "No judge scores found for this run."
                     )
 
             else:
@@ -1033,24 +1192,25 @@ with tab4:
     st.header("⚖️ Compare Evaluation Runs")
 
     st.write(
-        "Compare two or more completed runs using their "
-        "aggregated model metrics."
+        "Compare completed evaluation runs using "
+        "latency, cost, standard metrics, and "
+        "LLM-as-a-Judge metrics."
     )
 
-    comparison_run_1 = st.number_input(
+    run_1 = st.number_input(
         "Run ID 1",
         min_value=1,
         value=25,
         step=1,
-        key="comparison_run_1",
+        key="run_1",
     )
 
-    comparison_run_2 = st.number_input(
+    run_2 = st.number_input(
         "Run ID 2",
         min_value=1,
-        value=27,
+        value=28,
         step=1,
-        key="comparison_run_2",
+        key="run_2",
     )
 
     if st.button(
@@ -1058,7 +1218,7 @@ with tab4:
         type="primary",
     ):
 
-        if comparison_run_1 == comparison_run_2:
+        if run_1 == run_2:
 
             st.warning(
                 "Please select two different run IDs."
@@ -1068,8 +1228,8 @@ with tab4:
 
             response = get_run_comparison(
                 [
-                    comparison_run_1,
-                    comparison_run_2,
+                    run_1,
+                    run_2,
                 ]
             )
 
@@ -1083,24 +1243,24 @@ with tab4:
                         "Comparison loaded successfully."
                     )
 
+                    comparison_runs = comparison.get(
+                        "runs",
+                        [],
+                    )
+
                     # --------------------------------------------
-                    # RUN INFORMATION
+                    # Experiment information
                     # --------------------------------------------
 
                     st.subheader(
                         "Experiment Information"
                     )
 
-                    comparison_runs = comparison.get(
-                        "runs",
-                        [],
-                    )
-
-                    run_rows = []
+                    experiment_rows = []
 
                     for run in comparison_runs:
 
-                        run_rows.append(
+                        experiment_rows.append(
                             {
                                 "Run ID": run.get(
                                     "run_id"
@@ -1123,15 +1283,18 @@ with tab4:
                             }
                         )
 
-                    if run_rows:
+                    if experiment_rows:
 
                         st.dataframe(
-                            pd.DataFrame(run_rows),
+                            pd.DataFrame(
+                                experiment_rows
+                            ),
                             use_container_width=True,
+                            hide_index=True,
                         )
 
                     # --------------------------------------------
-                    # MODEL METRICS
+                    # Model comparison
                     # --------------------------------------------
 
                     comparison_rows = []
@@ -1210,26 +1373,24 @@ with tab4:
                         st.dataframe(
                             comparison_df,
                             use_container_width=True,
+                            hide_index=True,
                         )
 
                         # ----------------------------------------
-                        # LATENCY CHART
+                        # Latency
                         # ----------------------------------------
 
-                        latency_df = comparison_df[
-                            [
-                                "Run ID",
-                                "Model",
-                                "Avg Latency (ms)",
-                            ]
-                        ].copy()
-
                         fig_latency = px.bar(
-                            latency_df,
+                            comparison_df,
                             x="Model",
                             y="Avg Latency (ms)",
                             color="Run ID",
                             title="Average Latency",
+                            text_auto=".2f",
+                        )
+
+                        fig_latency.update_layout(
+                            height=450,
                         )
 
                         st.plotly_chart(
@@ -1238,23 +1399,20 @@ with tab4:
                         )
 
                         # ----------------------------------------
-                        # COST CHART
+                        # Cost
                         # ----------------------------------------
 
-                        cost_df = comparison_df[
-                            [
-                                "Run ID",
-                                "Model",
-                                "Total Cost (USD)",
-                            ]
-                        ].copy()
-
                         fig_cost = px.bar(
-                            cost_df,
+                            comparison_df,
                             x="Model",
                             y="Total Cost (USD)",
                             color="Run ID",
                             title="Total Evaluation Cost",
+                            text_auto=".6f",
+                        )
+
+                        fig_cost.update_layout(
+                            height=450,
                         )
 
                         st.plotly_chart(
@@ -1263,7 +1421,7 @@ with tab4:
                         )
 
                         # ----------------------------------------
-                        # JUDGE METRICS
+                        # Judge comparison
                         # ----------------------------------------
 
                         judge_columns = [
@@ -1276,11 +1434,11 @@ with tab4:
                             "Hallucination",
                         ]
 
-                        judge_comparison_df = comparison_df[
+                        judge_compare_df = comparison_df[
                             judge_columns
                         ].copy()
 
-                        judge_long_df = judge_comparison_df.melt(
+                        judge_long_df = judge_compare_df.melt(
                             id_vars=[
                                 "Run ID",
                                 "Model",
@@ -1304,6 +1462,11 @@ with tab4:
                             barmode="group",
                             title="LLM-as-a-Judge Comparison",
                             range_y=[0, 1],
+                            text_auto=".2f",
+                        )
+
+                        fig_judge_compare.update_layout(
+                            height=500,
                         )
 
                         st.plotly_chart(
