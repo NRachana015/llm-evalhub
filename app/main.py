@@ -402,7 +402,7 @@ def create_run(payload: RunCreate):
             prompt_version=payload.prompt_version,
             temperature=payload.temperature,
             max_tokens=payload.max_tokens,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         db.add(run)

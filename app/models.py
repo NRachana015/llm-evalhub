@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     Column,
@@ -15,10 +15,17 @@ from sqlalchemy.orm import relationship
 from .database import Base
 
 
+# ============================================================
+# DATASET
+# ============================================================
+
 class Dataset(Base):
     __tablename__ = "datasets"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
 
     name = Column(
         String(255),
@@ -27,7 +34,7 @@ class Dataset(Base):
 
     created_at = Column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
     )
 
     prompts = relationship(
@@ -37,10 +44,17 @@ class Dataset(Base):
     )
 
 
+# ============================================================
+# PROMPT
+# ============================================================
+
 class Prompt(Base):
     __tablename__ = "prompts"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
 
     dataset_id = Column(
         Integer,
@@ -78,10 +92,17 @@ class Prompt(Base):
     )
 
 
+# ============================================================
+# RUN
+# ============================================================
+
 class Run(Base):
     __tablename__ = "runs"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
 
     name = Column(
         String(255),
@@ -114,7 +135,7 @@ class Run(Base):
 
     created_at = Column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
     )
 
     responses = relationship(
@@ -124,10 +145,17 @@ class Run(Base):
     )
 
 
+# ============================================================
+# RESPONSE
+# ============================================================
+
 class Response(Base):
     __tablename__ = "responses"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
 
     run_id = Column(
         Integer,
@@ -146,18 +174,34 @@ class Response(Base):
         Float,
     )
 
-    cost_usd = Column(
-        Float,
-    )
-
     prompt_tokens = Column(
         Integer,
-        nullable=True,
+        default=0,
     )
 
     completion_tokens = Column(
         Integer,
+        default=0,
+    )
+
+    cost_usd = Column(
+        Float,
+        default=0.0,
+    )
+
+    status = Column(
+        String(50),
+        default="success",
+    )
+
+    error_message = Column(
+        Text,
         nullable=True,
+    )
+
+    created_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
     )
 
     run = relationship(
@@ -171,15 +215,24 @@ class Response(Base):
         cascade="all, delete",
     )
 
+    judge_scores = relationship(
+        "JudgeScore",
+        back_populates="response",
+        cascade="all, delete",
+    )
+
+
+# ============================================================
+# STANDARD SCORE
+# ============================================================
 
 class Score(Base):
-    """
-    One row per metric per model response.
-    """
-
     __tablename__ = "scores"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
 
     response_id = Column(
         Integer,
@@ -205,29 +258,31 @@ class Score(Base):
     )
 
 
-class JudgeScore(Base):
-    """
-    One row per LLM-as-a-Judge metric per model response.
-    """
+# ============================================================
+# LLM-AS-A-JUDGE SCORE
+# ============================================================
 
+class JudgeScore(Base):
     __tablename__ = "judge_scores"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
 
     response_id = Column(
         Integer,
         ForeignKey("responses.id"),
-        nullable=False,
     )
 
     judge_type = Column(
         String(50),
-        nullable=False,
+        nullable=True,
     )
 
     rubric_version = Column(
         String(50),
-        nullable=False,
+        nullable=True,
     )
 
     metric_name = Column(
@@ -245,11 +300,7 @@ class JudgeScore(Base):
         nullable=True,
     )
 
-    created_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-    )
-
     response = relationship(
         "Response",
+        back_populates="judge_scores",
     )
