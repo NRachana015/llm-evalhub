@@ -411,7 +411,7 @@ Compare completed experiments using:
 Configure datasets, models, prompt versions, temperature, and token limits before starting an evaluation run.
 
 <p align="center">
-  <img src="screenshots/run-evaluation.png" width="95%" />
+  <img src="app/screenshots/run-evaluation.png" width="95%" />
 </p>
 
 ---
@@ -421,7 +421,7 @@ Configure datasets, models, prompt versions, temperature, and token limits befor
 View standard evaluation metrics and LLM-as-a-Judge results through the interactive dashboard.
 
 <p align="center">
-  <img src="screenshots/results-overview.png" width="95%" />
+  <img src="app/screenshots/results-overview.png" width="95%" />
 </p>
 
 ---
@@ -431,7 +431,7 @@ View standard evaluation metrics and LLM-as-a-Judge results through the interact
 Analyze hallucination signals, judge execution type, rubric versions, and response-level evaluation details.
 
 <p align="center">
-  <img src="screenshots/results-details.png" width="95%" />
+  <img src="app/screenshots/results-details01.png" width="95%" />
 </p>
 
 ---
@@ -441,7 +441,7 @@ Analyze hallucination signals, judge execution type, rubric versions, and respon
 Compare different experiments using latency, cost, standard metrics, and LLM-as-a-Judge metrics.
 
 <p align="center">
-  <img src="screenshots/compare-runs.png" width="95%" />
+  <img src="app/screenshots/compare-runs.png" width="95%" />
 </p>
 
 ---
@@ -539,7 +539,7 @@ llm-eval-dashboard/
 │   ├── v1.json
 │   └── v2.json
 │
-├── screenshots/
+├── app/screenshots/
 │   ├── run-evaluation.png
 │   ├── results-overview.png
 │   ├── results-details.png
