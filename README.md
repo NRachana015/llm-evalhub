@@ -3,8 +3,11 @@
 ### Automated LLM Evaluation & Analytics Platform
 
 <p align="center">
-  <b>Evaluate. Compare. Diagnose. Improve.</b><br>
-  A production-oriented platform for systematically evaluating Large Language Model responses across quality, RAG, hallucination, latency, cost, and LLM-as-Judge dimensions.
+
+<b>Evaluate. Compare. Diagnose. Improve.</b><br>
+
+A production-oriented platform for systematically evaluating Large Language Model responses across quality, RAG, hallucination, latency, cost, and LLM-as-Judge dimensions.
+
 </p>
 
 <p align="center">
@@ -665,6 +668,8 @@ Create a `.env` file based on:
 
 Add the required API keys for the providers you want to use.
 
+> 🔐 **Security:** Never commit the `.env` file or expose API keys in source code, screenshots, documentation, or public repositories.
+
 ---
 
 # ▶️ Run the Application
@@ -1025,22 +1030,27 @@ Current automated test status:
 
 ---
 
-# 👩‍💻 Author
+# 👩‍💻 Author & Connect
 
 **Rachana Nyavanandhi**
 
 B.Tech — Artificial Intelligence & Machine Learning
 
-Focused on building practical AI/ML systems, evaluation pipelines, intelligent applications, and data-driven engineering solutions.
+### 🔗 Connect
+
+* **GitHub:** https://github.com/NRachana015
+* **Project Repository:** https://github.com/NRachana015/llm-evalhub
 
 ---
 
 <p align="center">
 
+⭐ **If you find LLM-EvalHub useful, consider starring the repository.**
+
+<br><br>
+
 ### 🤖 LLM-EvalHub
 
 **Evaluate. Compare. Diagnose. Improve.**
-
-⭐ If you find the project interesting, consider starring the repository.
 
 </p>
