@@ -35,7 +35,7 @@ def test_standard_metric_names():
 
 
 def test_evaluator_returns_all_standard_metrics():
-    """A normal evaluation must produce all 7 standard metrics."""
+    """A normal local evaluation must produce all 7 standard metrics."""
     results = evaluate_response(
         question="What is machine learning?",
         answer="Machine learning enables systems to learn patterns from data.",
@@ -44,6 +44,7 @@ def test_evaluator_returns_all_standard_metrics():
             "Machine learning is a branch of artificial intelligence "
             "that enables systems to learn patterns from data."
         ),
+        model_name="mock-model",
     )
 
     scores = scores_as_dict(results)
@@ -53,7 +54,7 @@ def test_evaluator_returns_all_standard_metrics():
 
 
 def test_perfect_response_scores_high():
-    """An answer matching the expected output should score perfectly."""
+    """An answer matching the expected output should score highly."""
     results = evaluate_response(
         question="What is machine learning?",
         answer="Machine learning enables systems to learn patterns from data.",
@@ -62,6 +63,7 @@ def test_perfect_response_scores_high():
             "Machine learning is a branch of artificial intelligence "
             "that enables systems to learn patterns from data."
         ),
+        model_name="mock-model",
     )
 
     scores = scores_as_dict(results)
@@ -87,6 +89,7 @@ def test_relevant_response_is_detected():
             "Machine learning is a branch of artificial intelligence "
             "that enables systems to learn patterns from data."
         ),
+        model_name="mock-model",
     )
 
     scores = scores_as_dict(results)
@@ -95,7 +98,7 @@ def test_relevant_response_is_detected():
 
 
 def test_incorrect_response_does_not_score_perfectly():
-    """A clearly incorrect answer must not receive a perfect correctness score."""
+    """A clearly incorrect answer must not receive a perfect local score."""
     results = evaluate_response(
         question="What is machine learning?",
         answer="Machine learning is a type of database.",
@@ -104,6 +107,7 @@ def test_incorrect_response_does_not_score_perfectly():
             "Machine learning is a branch of artificial intelligence "
             "that enables systems to learn patterns from data."
         ),
+        model_name="mock-model",
     )
 
     scores = scores_as_dict(results)
@@ -119,6 +123,7 @@ def test_metric_scores_are_normalized():
         answer="Python is a programming language.",
         expected="Python is a programming language.",
         context="Python is a high-level programming language.",
+        model_name="mock-model",
     )
 
     scores = scores_as_dict(results)
